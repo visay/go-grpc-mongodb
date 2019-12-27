@@ -18,8 +18,8 @@ import (
 	"context"
 	"fmt"
 
-	blogpb "../../proto"
 	"github.com/spf13/cobra"
+	blogpb "github.com/visay/go-grpc-mongodb/proto"
 )
 
 // readCmd represents the read command
@@ -27,7 +27,7 @@ var readCmd = &cobra.Command{
 	Use:   "read",
 	Short: "Find a Blog post by its ID",
 	Long: `Find a blog post by it's mongoDB Unique identifier.
-	
+
 	If no blog post is found for the ID it will return a 'Not Found' error`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		id, err := cmd.Flags().GetString("id")

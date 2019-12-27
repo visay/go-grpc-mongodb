@@ -8,7 +8,7 @@ import (
 	"os"
 	"os/signal"
 
-	blogpb "../proto"
+	blogpb "github.com/visay/go-grpc-mongodb/proto"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -91,9 +91,9 @@ func (s *BlogServiceServer) UpdateBlog(ctx context.Context, req *blogpb.UpdateBl
 
 	// Convert the data to be updated into an unordered Bson document
 	update := bson.M{
-		"authord_id": blog.GetAuthorId(),
-		"title":      blog.GetTitle(),
-		"content":    blog.GetContent(),
+		"author_id": blog.GetAuthorId(),
+		"title":     blog.GetTitle(),
+		"content":   blog.GetContent(),
 	}
 
 	// Convert the oid into an unordered bson document to search by id
@@ -226,7 +226,7 @@ func main() {
 		fmt.Println("Connected to Mongodb")
 	}
 
-	blogdb = db.Database("mydb").Collection("blog")
+	blogdb = db.Database("blog_db").Collection("blog_collection")
 
 	// Start the server in a child routine
 	go func() {

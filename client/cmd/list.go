@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"io"
 
-	blogpb "../../proto"
 	"github.com/spf13/cobra"
+	blogpb "github.com/visay/go-grpc-mongodb/proto"
 )
 
 // listCmd represents the read command

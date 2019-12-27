@@ -21,10 +21,10 @@ import (
 	"os"
 	"time"
 
-	blogpb "../../proto"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	blogpb "github.com/visay/go-grpc-mongodb/proto"
 	"google.golang.org/grpc"
 )
 
