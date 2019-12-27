@@ -1,4 +1,4 @@
-// Copyright © 2019 NAME HERE <EMAIL ADDRESS>
+// Copyright © 2019 Visay Keo <keo@visay.info>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,25 +19,25 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	blogpb "github.com/visay/go-grpc-mongodb/proto"
+	plantpb "github.com/visay/go-grpc-mongodb/proto"
 )
 
 // readCmd represents the read command
 var readCmd = &cobra.Command{
 	Use:   "read",
-	Short: "Find a Blog post by its ID",
-	Long: `Find a blog post by it's mongoDB Unique identifier.
+	Short: "Find a Plant by its ID",
+	Long: `Find a plant by its mongoDB Unique identifier.
 
-	If no blog post is found for the ID it will return a 'Not Found' error`,
+	If no plant is found for the ID, it will return a 'Not Found' error`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		id, err := cmd.Flags().GetString("id")
 		if err != nil {
 			return err
 		}
-		req := &blogpb.ReadBlogReq{
+		req := &plantpb.ReadPlantReq{
 			Id: id,
 		}
-		res, err := client.ReadBlog(context.Background(), req)
+		res, err := client.ReadPlant(context.Background(), req)
 		if err != nil {
 			return err
 		}
@@ -47,7 +47,7 @@ var readCmd = &cobra.Command{
 }
 
 func init() {
-	readCmd.Flags().StringP("id", "i", "", "The id of the blog")
+	readCmd.Flags().StringP("id", "i", "", "The id of the plant")
 	readCmd.MarkFlagRequired("id")
 	rootCmd.AddCommand(readCmd)
 

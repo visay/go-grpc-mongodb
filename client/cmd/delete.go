@@ -1,4 +1,4 @@
-// Copyright © 2019 NAME HERE <EMAIL ADDRESS>
+// Copyright © 2019 Visay Keo <keo@visay.info>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,37 +19,37 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	blogpb "github.com/visay/go-grpc-mongodb/proto"
+	plantpb "github.com/visay/go-grpc-mongodb/proto"
 )
 
 // deleteCmd represents the read command
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "Delete a Blog post by its ID",
-	Long: `Delete a blog post by it's mongoDB Unique identifier.
+	Short: "Delete a Plant by its ID",
+	Long: `Delete a plant by its mongoDB Unique identifier.
 
-	If no blog post is found for the ID it will return a 'Not Found' error`,
+	If no plant is found for the ID, it will return a 'Not Found' error`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		id, err := cmd.Flags().GetString("id")
 		if err != nil {
 			return err
 		}
-		req := &blogpb.DeleteBlogReq{
+		req := &plantpb.DeletePlantReq{
 			Id: id,
 		}
 		// We only return true upon success for other cases an error is thrown
 		// We can thus omit the response variable for now and just print something to console
-		_, err = client.DeleteBlog(context.Background(), req)
+		_, err = client.DeletePlant(context.Background(), req)
 		if err != nil {
 			return err
 		}
-		fmt.Printf("Succesfully deleted the blog with id %s\n", id)
+		fmt.Printf("Succesfully deleted the plant with id %s\n", id)
 		return nil
 	},
 }
 
 func init() {
-	deleteCmd.Flags().StringP("id", "i", "", "The id of the blog")
+	deleteCmd.Flags().StringP("id", "i", "", "The id of the plant")
 	deleteCmd.MarkFlagRequired("id")
 	rootCmd.AddCommand(deleteCmd)
 

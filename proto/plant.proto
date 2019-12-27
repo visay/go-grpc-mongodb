@@ -1,0 +1,60 @@
+// protoc proto/plant.proto --go_out=plugins=grpc:.
+
+syntax = "proto3";
+
+package plant;
+
+option go_package = "plantpb";
+
+message Plant {
+    string id = 1;
+    string name = 2;
+    string group = 3;
+    string desc = 4;
+}
+
+message CreatePlantReq {
+    Plant plant = 1; // Plant id blank
+}
+
+message CreatePlantRes {
+    Plant plant = 1; // Plant id filled in
+}
+
+message ReadPlantReq {
+    string id = 1;
+}
+
+message ReadPlantRes {
+    Plant plant = 1;
+}
+
+message UpdatePlantReq {
+    Plant plant = 1;
+}
+
+message UpdatePlantRes {
+    Plant plant = 1;
+}
+
+message DeletePlantReq {
+    string id = 1;
+}
+
+message DeletePlantRes {
+    bool success = 1;
+}
+
+message ListPlantsReq {}
+
+message ListPlantsRes {
+    Plant plant = 1;
+}
+
+service PlantService {
+    rpc CreatePlant(CreatePlantReq) returns (CreatePlantRes);
+    rpc ReadPlant(ReadPlantReq) returns (ReadPlantRes);
+    rpc UpdatePlant(UpdatePlantReq) returns (UpdatePlantRes);
+    rpc DeletePlant(DeletePlantReq) returns (DeletePlantRes);
+    rpc ListPlants(ListPlantsReq) returns (stream ListPlantsRes);
+}

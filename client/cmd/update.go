@@ -1,4 +1,4 @@
-// Copyright © 2019 NAME HERE <EMAIL ADDRESS>
+// Copyright © 2019 Visay Keo <keo@visay.info>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,34 +19,34 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	blogpb "github.com/visay/go-grpc-mongodb/proto"
+	plantpb "github.com/visay/go-grpc-mongodb/proto"
 )
 
-// updateCmd represents the read command
+// updateCmd represents the update command
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: "Update a Blog post by its ID",
-	Long: `Update a blog post by it's mongoDB Unique identifier.
+	Short: "Update a Plant by its ID",
+	Long: `Update a plant by its mongoDB Unique identifier.
 
-	If no blog post is found for the ID it will return a 'Not Found' error`,
+	If no plant is found for the ID, it will return a 'Not Found' error`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Get the flags from CLI
 		id, err := cmd.Flags().GetString("id")
-		author, err := cmd.Flags().GetString("author")
-		title, err := cmd.Flags().GetString("title")
-		content, err := cmd.Flags().GetString("content")
+		name, err := cmd.Flags().GetString("name")
+		group, err := cmd.Flags().GetString("group")
+		desc, err := cmd.Flags().GetString("desc")
 
-		// Create an UpdateBlogRequest
-		req := &blogpb.UpdateBlogReq{
-			&blogpb.Blog{
-				Id:       id,
-				AuthorId: author,
-				Title:    title,
-				Content:  content,
+		// Create an UpdatePlantRequest
+		req := &plantpb.UpdatePlantReq{
+			Plant: &plantpb.Plant{
+				Id:    id,
+				Name:  name,
+				Group: group,
+				Desc:  desc,
 			},
 		}
 
-		res, err := client.UpdateBlog(context.Background(), req)
+		res, err := client.UpdatePlant(context.Background(), req)
 		if err != nil {
 			return err
 		}
@@ -57,10 +57,10 @@ var updateCmd = &cobra.Command{
 }
 
 func init() {
-	updateCmd.Flags().StringP("id", "i", "", "The id of the blog")
-	updateCmd.Flags().StringP("author", "a", "", "Add an author")
-	updateCmd.Flags().StringP("title", "t", "", "A title for the blog")
-	updateCmd.Flags().StringP("content", "c", "", "The content for the blog")
+	updateCmd.Flags().StringP("id", "i", "", "The id of the plant")
+	updateCmd.Flags().StringP("name", "n", "", "Name of the plant")
+	updateCmd.Flags().StringP("group", "g", "", "A group for the plant")
+	updateCmd.Flags().StringP("desc", "d", "", "The description for the plant")
 	updateCmd.MarkFlagRequired("id")
 	rootCmd.AddCommand(updateCmd)
 

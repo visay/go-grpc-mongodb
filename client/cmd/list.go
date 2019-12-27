@@ -1,4 +1,4 @@
-// Copyright © 2019 NAME HERE <EMAIL ADDRESS>
+// Copyright © 2019 Visay Keo <keo@visay.info>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,25 +20,25 @@ import (
 	"io"
 
 	"github.com/spf13/cobra"
-	blogpb "github.com/visay/go-grpc-mongodb/proto"
+	plantpb "github.com/visay/go-grpc-mongodb/proto"
 )
 
 // listCmd represents the read command
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: "List all blog posts",
+	Short: "List all plants",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Create the request (this can be inline below too)
-		req := &blogpb.ListBlogsReq{}
-		// Call ListBlogs that returns a stream
-		stream, err := client.ListBlogs(context.Background(), req)
+		req := &plantpb.ListPlantsReq{}
+		// Call ListPlants that returns a stream
+		stream, err := client.ListPlants(context.Background(), req)
 		// Check for errors
 		if err != nil {
 			return err
 		}
 		// Start iterating
 		for {
-			// stream.Recv returns a pointer to a ListBlogRes at the current iteration
+			// stream.Recv returns a pointer to a ListPlantRes at the current iteration
 			res, err := stream.Recv()
 			// If end of stream, break the loop
 			if err == io.EOF {
@@ -48,8 +48,8 @@ var listCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			// If everything went well use the generated getter to print the blog message
-			fmt.Println(res.GetBlog())
+			// If everything went well use the generated getter to print the plant message
+			fmt.Println(res.GetPlant())
 		}
 		return nil
 	},

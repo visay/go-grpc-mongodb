@@ -1,4 +1,4 @@
-// Copyright © 2019 NAME HERE <EMAIL ADDRESS>
+// Copyright © 2019 Visay Keo <keo@visay.info>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,23 +24,23 @@ import (
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	blogpb "github.com/visay/go-grpc-mongodb/proto"
+	plantpb "github.com/visay/go-grpc-mongodb/proto"
 	"google.golang.org/grpc"
 )
 
 var cfgFile string
 
 // Client and context global vars
-var client blogpb.BlogServiceClient
+var client plantpb.PlantServiceClient
 var requestCtx context.Context
 var requestOpts grpc.DialOption
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "blogclient",
-	Short: "a gRPC client to communicate with the BlogService server",
-	Long: `a gRPC client to communicate with the BlogService server.
-	You can use this client to create and read blogs.`,
+	Use:   "plantclient",
+	Short: "a gRPC client to communicate with the PlantService server",
+	Long: `a gRPC client to communicate with the PlantService server.
+	You can use this client to create and read plants.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	//	Run: func(cmd *cobra.Command, args []string) { },
@@ -61,7 +61,7 @@ func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.blogclient.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.plantclient.yaml)")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -69,7 +69,7 @@ func init() {
 
 	// After Cobra root config init
 	// We initialize the client
-	fmt.Println("Starting Blog Service Client")
+	fmt.Println("Starting Plant Service Client")
 	// Establish context to timeout if server does not respond
 	requestCtx, _ = context.WithTimeout(context.Background(), 10*time.Second)
 	// Establish insecure grpc options (no TLS)
@@ -85,8 +85,8 @@ func init() {
 	// The arguments are evaluated immeadiatly but not executed
 	// defer conn.Close()
 
-	// Instantiate the BlogServiceClient with our client connection to the server
-	client = blogpb.NewBlogServiceClient(conn)
+	// Instantiate the PlantServiceClient with our client connection to the server
+	client = plantpb.NewPlantServiceClient(conn)
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -102,9 +102,9 @@ func initConfig() {
 			os.Exit(1)
 		}
 
-		// Search config in home directory with name ".blogclient" (without extension).
+		// Search config in home directory with name ".plantclient" (without extension).
 		viper.AddConfigPath(home)
-		viper.SetConfigName(".blogclient")
+		viper.SetConfigName(".plantclient")
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match

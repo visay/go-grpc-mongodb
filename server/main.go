@@ -8,7 +8,7 @@ import (
 	"os"
 	"os/signal"
 
-	blogpb "github.com/visay/go-grpc-mongodb/proto"
+	plantpb "github.com/visay/go-grpc-mongodb/proto"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -18,49 +18,49 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type BlogServiceServer struct {
+type PlantServiceServer struct {
 }
 
-func (s *BlogServiceServer) ReadBlog(ctx context.Context, req *blogpb.ReadBlogReq) (*blogpb.ReadBlogRes, error) {
+func (s *PlantServiceServer) ReadPlant(ctx context.Context, req *plantpb.ReadPlantReq) (*plantpb.ReadPlantRes, error) {
 	// convert string id (from proto) to mongoDB ObjectId
 	oid, err := primitive.ObjectIDFromHex(req.GetId())
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Could not convert to ObjectId: %v", err))
 	}
-	result := blogdb.FindOne(ctx, bson.M{"_id": oid})
-	// Create an empty BlogItem to write our decode result to
-	data := BlogItem{}
+	result := plantdb.FindOne(ctx, bson.M{"_id": oid})
+	// Create an empty PlantItem to write our decode result to
+	data := PlantItem{}
 	// decode and write to data
 	if err := result.Decode(&data); err != nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("Could not find blog with Object Id %s: %v", req.GetId(), err))
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("Could not find plant with Object Id %s: %v", req.GetId(), err))
 	}
-	// Cast to ReadBlogRes type
-	response := &blogpb.ReadBlogRes{
-		Blog: &blogpb.Blog{
-			Id:       oid.Hex(),
-			AuthorId: data.AuthorID,
-			Title:    data.Title,
-			Content:  data.Content,
+	// Cast to ReadPlantRes type
+	response := &plantpb.ReadPlantRes{
+		Plant: &plantpb.Plant{
+			Id:    oid.Hex(),
+			Name:  data.Name,
+			Group: data.Group,
+			Desc:  data.Desc,
 		},
 	}
 	return response, nil
 }
 
-func (s *BlogServiceServer) CreateBlog(ctx context.Context, req *blogpb.CreateBlogReq) (*blogpb.CreateBlogRes, error) {
-	// Get the protobuf blog type from the protobuf request type
-	// Essentially doing req.Blog to access the struct with a nil check
-	blog := req.GetBlog()
-	// Now we have to convert this into a BlogItem type to convert into BSON
-	data := BlogItem{
+func (s *PlantServiceServer) CreatePlant(ctx context.Context, req *plantpb.CreatePlantReq) (*plantpb.CreatePlantRes, error) {
+	// Get the protobuf plant type from the protobuf request type
+	// Essentially doing req.Plant to access the struct with a nil check
+	plant := req.GetPlant()
+	// Now we have to convert this into a PlantItem type to convert into BSON
+	data := PlantItem{
 		// ID:       primitive.NilObjectID,
-		AuthorID: blog.GetAuthorId(),
-		Title:    blog.GetTitle(),
-		Content:  blog.GetContent(),
+		Name:  plant.GetName(),
+		Group: plant.GetGroup(),
+		Desc:  plant.GetDesc(),
 	}
 
 	// Insert the data into the database
 	// *InsertOneResult contains the oid
-	result, err := blogdb.InsertOne(mongoCtx, data)
+	result, err := plantdb.InsertOne(mongoCtx, data)
 	// check error
 	if err != nil {
 		// return internal gRPC error to be handled later
@@ -69,31 +69,31 @@ func (s *BlogServiceServer) CreateBlog(ctx context.Context, req *blogpb.CreateBl
 			fmt.Sprintf("Internal error: %v", err),
 		)
 	}
-	// add the id to blog
+	// add the id to plant
 	oid := result.InsertedID.(primitive.ObjectID)
-	blog.Id = oid.Hex()
-	// return the blog in a CreateBlogRes type
-	return &blogpb.CreateBlogRes{Blog: blog}, nil
+	plant.Id = oid.Hex()
+	// return the plant in a CreatePlantRes type
+	return &plantpb.CreatePlantRes{Plant: plant}, nil
 }
 
-func (s *BlogServiceServer) UpdateBlog(ctx context.Context, req *blogpb.UpdateBlogReq) (*blogpb.UpdateBlogRes, error) {
-	// Get the blog data from the request
-	blog := req.GetBlog()
+func (s *PlantServiceServer) UpdatePlant(ctx context.Context, req *plantpb.UpdatePlantReq) (*plantpb.UpdatePlantRes, error) {
+	// Get the plant data from the request
+	plant := req.GetPlant()
 
 	// Convert the Id string to a MongoDB ObjectId
-	oid, err := primitive.ObjectIDFromHex(blog.GetId())
+	oid, err := primitive.ObjectIDFromHex(plant.GetId())
 	if err != nil {
 		return nil, status.Errorf(
 			codes.InvalidArgument,
-			fmt.Sprintf("Could not convert the supplied blog id to a MongoDB ObjectId: %v", err),
+			fmt.Sprintf("Could not convert the supplied plant id to a MongoDB ObjectId: %v", err),
 		)
 	}
 
 	// Convert the data to be updated into an unordered Bson document
 	update := bson.M{
-		"author_id": blog.GetAuthorId(),
-		"title":     blog.GetTitle(),
-		"content":   blog.GetContent(),
+		"name":  plant.GetName(),
+		"group": plant.GetGroup(),
+		"desc":  plant.GetDesc(),
 	}
 
 	// Convert the oid into an unordered bson document to search by id
@@ -101,48 +101,48 @@ func (s *BlogServiceServer) UpdateBlog(ctx context.Context, req *blogpb.UpdateBl
 
 	// Result is the BSON encoded result
 	// To return the updated document instead of original we have to add options.
-	result := blogdb.FindOneAndUpdate(ctx, filter, bson.M{"$set": update}, options.FindOneAndUpdate().SetReturnDocument(1))
+	result := plantdb.FindOneAndUpdate(ctx, filter, bson.M{"$set": update}, options.FindOneAndUpdate().SetReturnDocument(1))
 
 	// Decode result and write it to 'decoded'
-	decoded := BlogItem{}
+	decoded := PlantItem{}
 	err = result.Decode(&decoded)
 	if err != nil {
 		return nil, status.Errorf(
 			codes.NotFound,
-			fmt.Sprintf("Could not find blog with supplied ID: %v", err),
+			fmt.Sprintf("Could not find plant with supplied ID: %v", err),
 		)
 	}
-	return &blogpb.UpdateBlogRes{
-		Blog: &blogpb.Blog{
-			Id:       decoded.ID.Hex(),
-			AuthorId: decoded.AuthorID,
-			Title:    decoded.Title,
-			Content:  decoded.Content,
+	return &plantpb.UpdatePlantRes{
+		Plant: &plantpb.Plant{
+			Id:    decoded.ID.Hex(),
+			Name:  decoded.Name,
+			Group: decoded.Group,
+			Desc:  decoded.Desc,
 		},
 	}, nil
 }
 
-func (s *BlogServiceServer) DeleteBlog(ctx context.Context, req *blogpb.DeleteBlogReq) (*blogpb.DeleteBlogRes, error) {
+func (s *PlantServiceServer) DeletePlant(ctx context.Context, req *plantpb.DeletePlantReq) (*plantpb.DeletePlantRes, error) {
 	oid, err := primitive.ObjectIDFromHex(req.GetId())
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Could not convert to ObjectId: %v", err))
 	}
 	// DeleteOne returns DeleteResult which is a struct containing the amount of deleted docs (in this case only 1 always)
 	// So we return a boolean instead
-	_, err = blogdb.DeleteOne(ctx, bson.M{"_id": oid})
+	_, err = plantdb.DeleteOne(ctx, bson.M{"_id": oid})
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("Could not find/delete blog with id %s: %v", req.GetId(), err))
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("Could not find/delete plant with id %s: %v", req.GetId(), err))
 	}
-	return &blogpb.DeleteBlogRes{
+	return &plantpb.DeletePlantRes{
 		Success: true,
 	}, nil
 }
 
-func (s *BlogServiceServer) ListBlogs(req *blogpb.ListBlogsReq, stream blogpb.BlogService_ListBlogsServer) error {
-	// Initiate a BlogItem type to write decoded data to
-	data := &BlogItem{}
+func (s *PlantServiceServer) ListPlants(req *plantpb.ListPlantsReq, stream plantpb.PlantService_ListPlantsServer) error {
+	// Initiate a PlantItem type to write decoded data to
+	data := &PlantItem{}
 	// collection.Find returns a cursor for our (empty) query
-	cursor, err := blogdb.Find(context.Background(), bson.M{})
+	cursor, err := plantdb.Find(context.Background(), bson.M{})
 	if err != nil {
 		return status.Errorf(codes.Internal, fmt.Sprintf("Unknown internal error: %v", err))
 	}
@@ -156,13 +156,13 @@ func (s *BlogServiceServer) ListBlogs(req *blogpb.ListBlogsReq, stream blogpb.Bl
 		if err != nil {
 			return status.Errorf(codes.Unavailable, fmt.Sprintf("Could not decode data: %v", err))
 		}
-		// If no error is found send blog over stream
-		stream.Send(&blogpb.ListBlogsRes{
-			Blog: &blogpb.Blog{
-				Id:       data.ID.Hex(),
-				AuthorId: data.AuthorID,
-				Content:  data.Content,
-				Title:    data.Title,
+		// If no error is found send plant over stream
+		stream.Send(&plantpb.ListPlantsRes{
+			Plant: &plantpb.Plant{
+				Id:    data.ID.Hex(),
+				Name:  data.Name,
+				Group: data.Group,
+				Desc:  data.Desc,
 			},
 		})
 	}
@@ -173,15 +173,15 @@ func (s *BlogServiceServer) ListBlogs(req *blogpb.ListBlogsReq, stream blogpb.Bl
 	return nil
 }
 
-type BlogItem struct {
-	ID       primitive.ObjectID `bson:"_id,omitempty"`
-	AuthorID string             `bson:"author_id"`
-	Content  string             `bson:"content"`
-	Title    string             `bson:"title"`
+type PlantItem struct {
+	ID    primitive.ObjectID `bson:"_id,omitempty"`
+	Name  string             `bson:"name"`
+	Group string             `bson:"group"`
+	Desc  string             `bson:"desc"`
 }
 
 var db *mongo.Client
-var blogdb *mongo.Collection
+var plantdb *mongo.Collection
 var mongoCtx context.Context
 
 func main() {
@@ -207,10 +207,10 @@ func main() {
 	opts := []grpc.ServerOption{}
 	// var s *grpc.Server
 	s := grpc.NewServer(opts...)
-	// var srv *BlogServiceServer
-	srv := &BlogServiceServer{}
+	// var srv *PlantServiceServer
+	srv := &PlantServiceServer{}
 
-	blogpb.RegisterBlogServiceServer(s, srv)
+	plantpb.RegisterPlantServiceServer(s, srv)
 
 	// Initialize MongoDb client
 	fmt.Println("Connecting to MongoDB...")
@@ -226,7 +226,7 @@ func main() {
 		fmt.Println("Connected to Mongodb")
 	}
 
-	blogdb = db.Database("blog_db").Collection("blog_collection")
+	plantdb = db.Database("plant_db").Collection("plant_collection")
 
 	// Start the server in a child routine
 	go func() {
