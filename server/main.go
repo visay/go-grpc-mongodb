@@ -37,10 +37,10 @@ func (s *PlantServiceServer) ReadPlant(ctx context.Context, req *plantpb.ReadPla
 	// Cast to ReadPlantRes type
 	response := &plantpb.ReadPlantRes{
 		Plant: &plantpb.Plant{
-			Id:    oid.Hex(),
-			Name:  data.Name,
-			Group: data.Group,
-			Desc:  data.Desc,
+			Id:         oid.Hex(),
+			Name:       data.Name,
+			CategoryId: data.CategoryID,
+			Desc:       data.Desc,
 		},
 	}
 	return response, nil
@@ -53,9 +53,9 @@ func (s *PlantServiceServer) CreatePlant(ctx context.Context, req *plantpb.Creat
 	// Now we have to convert this into a PlantItem type to convert into BSON
 	data := PlantItem{
 		// ID:       primitive.NilObjectID,
-		Name:  plant.GetName(),
-		Group: plant.GetGroup(),
-		Desc:  plant.GetDesc(),
+		Name:       plant.GetName(),
+		CategoryID: plant.GetCategoryId(),
+		Desc:       plant.GetDesc(),
 	}
 
 	// Insert the data into the database
@@ -91,9 +91,9 @@ func (s *PlantServiceServer) UpdatePlant(ctx context.Context, req *plantpb.Updat
 
 	// Convert the data to be updated into an unordered Bson document
 	update := bson.M{
-		"name":  plant.GetName(),
-		"group": plant.GetGroup(),
-		"desc":  plant.GetDesc(),
+		"name":        plant.GetName(),
+		"category_id": plant.GetCategoryId(),
+		"desc":        plant.GetDesc(),
 	}
 
 	// Convert the oid into an unordered bson document to search by id
@@ -114,10 +114,10 @@ func (s *PlantServiceServer) UpdatePlant(ctx context.Context, req *plantpb.Updat
 	}
 	return &plantpb.UpdatePlantRes{
 		Plant: &plantpb.Plant{
-			Id:    decoded.ID.Hex(),
-			Name:  decoded.Name,
-			Group: decoded.Group,
-			Desc:  decoded.Desc,
+			Id:         decoded.ID.Hex(),
+			Name:       decoded.Name,
+			CategoryId: decoded.CategoryID,
+			Desc:       decoded.Desc,
 		},
 	}, nil
 }
@@ -159,10 +159,10 @@ func (s *PlantServiceServer) ListPlants(req *plantpb.ListPlantsReq, stream plant
 		// If no error is found send plant over stream
 		stream.Send(&plantpb.ListPlantsRes{
 			Plant: &plantpb.Plant{
-				Id:    data.ID.Hex(),
-				Name:  data.Name,
-				Group: data.Group,
-				Desc:  data.Desc,
+				Id:         data.ID.Hex(),
+				Name:       data.Name,
+				CategoryId: data.CategoryID,
+				Desc:       data.Desc,
 			},
 		})
 	}
@@ -174,10 +174,10 @@ func (s *PlantServiceServer) ListPlants(req *plantpb.ListPlantsReq, stream plant
 }
 
 type PlantItem struct {
-	ID    primitive.ObjectID `bson:"_id,omitempty"`
-	Name  string             `bson:"name"`
-	Group string             `bson:"group"`
-	Desc  string             `bson:"desc"`
+	ID         primitive.ObjectID `bson:"_id,omitempty"`
+	Name       string             `bson:"name"`
+	CategoryID string             `bson:"category_id"`
+	Desc       string             `bson:"desc"`
 }
 
 var db *mongo.Client

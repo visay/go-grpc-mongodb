@@ -9,7 +9,7 @@ option go_package = "plantpb";
 message Plant {
     string id = 1;
     string name = 2;
-    string group = 3;
+    string category_id = 3;
     string desc = 4;
 }
 

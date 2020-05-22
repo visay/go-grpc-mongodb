@@ -28,18 +28,18 @@ var createCmd = &cobra.Command{
 	Short: "Create a new plant",
 	Long: `Create a new plant on the server through gRPC.
 
-	A plant requires a Name, Group and Description.`,
+	A plant requires a Name, Category and Description.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name, err := cmd.Flags().GetString("name")
-		group, err := cmd.Flags().GetString("group")
+		category_id, err := cmd.Flags().GetString("category_id")
 		desc, err := cmd.Flags().GetString("desc")
 		if err != nil {
 			return err
 		}
 		plant := &plantpb.Plant{
-			Name:  name,
-			Group: group,
-			Desc:  desc,
+			Name:       name,
+			CategoryId: category_id,
+			Desc:       desc,
 		}
 		res, err := client.CreatePlant(
 			context.TODO(),
@@ -57,10 +57,10 @@ var createCmd = &cobra.Command{
 
 func init() {
 	createCmd.Flags().StringP("name", "n", "", "Add a name")
-	createCmd.Flags().StringP("group", "g", "", "A group for the plant")
+	createCmd.Flags().StringP("category_id", "c", "", "The category for the plant")
 	createCmd.Flags().StringP("desc", "d", "", "The description for the plant")
 	createCmd.MarkFlagRequired("name")
-	createCmd.MarkFlagRequired("group")
+	createCmd.MarkFlagRequired("category_id")
 	createCmd.MarkFlagRequired("desc")
 	rootCmd.AddCommand(createCmd)
 	// Here you will define your flags and configuration settings.

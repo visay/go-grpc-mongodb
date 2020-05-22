@@ -33,16 +33,16 @@ var updateCmd = &cobra.Command{
 		// Get the flags from CLI
 		id, err := cmd.Flags().GetString("id")
 		name, err := cmd.Flags().GetString("name")
-		group, err := cmd.Flags().GetString("group")
+		category_id, err := cmd.Flags().GetString("category_id")
 		desc, err := cmd.Flags().GetString("desc")
 
 		// Create an UpdatePlantRequest
 		req := &plantpb.UpdatePlantReq{
 			Plant: &plantpb.Plant{
-				Id:    id,
-				Name:  name,
-				Group: group,
-				Desc:  desc,
+				Id:         id,
+				Name:       name,
+				CategoryId: category_id,
+				Desc:       desc,
 			},
 		}
 
@@ -59,7 +59,7 @@ var updateCmd = &cobra.Command{
 func init() {
 	updateCmd.Flags().StringP("id", "i", "", "The id of the plant")
 	updateCmd.Flags().StringP("name", "n", "", "Name of the plant")
-	updateCmd.Flags().StringP("group", "g", "", "A group for the plant")
+	updateCmd.Flags().StringP("category_id", "c", "", "The category for the plant")
 	updateCmd.Flags().StringP("desc", "d", "", "The description for the plant")
 	updateCmd.MarkFlagRequired("id")
 	rootCmd.AddCommand(updateCmd)
