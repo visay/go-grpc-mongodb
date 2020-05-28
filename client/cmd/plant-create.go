@@ -17,9 +17,10 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/spf13/cobra"
-	plantpb "github.com/visay/go-grpc-mongodb/proto"
+	plantpb "github.com/visay/go-grpc-mongodb/proto/plant"
 )
 
 // createCmd represents the create command
@@ -41,14 +42,14 @@ var createCmd = &cobra.Command{
 			CategoryId: category_id,
 			Desc:       desc,
 		}
-		res, err := client.CreatePlant(
+		res, err := plantClient.CreatePlant(
 			context.TODO(),
 			&plantpb.CreatePlantReq{
 				Plant: plant,
 			},
 		)
 		if err != nil {
-			return err
+			log.Fatalf("Error creating plant:\n\n%s", err)
 		}
 		fmt.Printf("Plant created: %s\n", res.Plant.Id)
 		return nil

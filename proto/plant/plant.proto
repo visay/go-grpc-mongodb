@@ -1,4 +1,4 @@
-// protoc proto/plant.proto --go_out=plugins=grpc:.
+// protoc proto/plant/plant.proto --go_out=plugins=grpc:.
 
 syntax = "proto3";
 

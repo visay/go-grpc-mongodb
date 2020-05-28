@@ -24,23 +24,25 @@ import (
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	plantpb "github.com/visay/go-grpc-mongodb/proto"
+	categorypb "github.com/visay/go-grpc-mongodb/proto/category"
+	plantpb "github.com/visay/go-grpc-mongodb/proto/plant"
 	"google.golang.org/grpc"
 )
 
 var cfgFile string
 
 // Client and context global vars
-var client plantpb.PlantServiceClient
+var plantClient plantpb.PlantServiceClient
+var categoryClient categorypb.CategoryServiceClient
 var requestCtx context.Context
 var requestOpts grpc.DialOption
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "plantclient",
-	Short: "a gRPC client to communicate with the PlantService server",
-	Long: `a gRPC client to communicate with the PlantService server.
-	You can use this client to create and read plants.`,
+	Use:   "client",
+	Short: "a gRPC client to communicate with the Service servers",
+	Long: `a gRPC client to communicate with the Service servers.
+	You can use this client to create and read plants or categories.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	//	Run: func(cmd *cobra.Command, args []string) { },
@@ -69,7 +71,7 @@ func init() {
 
 	// After Cobra root config init
 	// We initialize the client
-	fmt.Println("Starting Plant Service Client")
+	fmt.Println("Starting Service Client")
 	// Establish context to timeout if server does not respond
 	requestCtx, _ = context.WithTimeout(context.Background(), 10*time.Second)
 	// Establish insecure grpc options (no TLS)
@@ -86,7 +88,8 @@ func init() {
 	// defer conn.Close()
 
 	// Instantiate the PlantServiceClient with our client connection to the server
-	client = plantpb.NewPlantServiceClient(conn)
+	plantClient = plantpb.NewPlantServiceClient(conn)
+	categoryClient = categorypb.NewCategoryServiceClient(conn)
 }
 
 // initConfig reads in config file and ENV variables if set.

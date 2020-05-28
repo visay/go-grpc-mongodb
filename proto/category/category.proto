@@ -1,0 +1,58 @@
+// protoc proto/category/category.proto --go_out=plugins=grpc:.
+
+syntax = "proto3";
+
+package category;
+
+option go_package = "categorypb";
+
+message Category {
+    string id = 1;
+    string name = 2;
+}
+
+message CreateCategoryReq {
+    Category category = 1; // Category id blank
+}
+
+message CreateCategoryRes {
+    Category category = 1; // Category id filled in
+}
+
+message ReadCategoryReq {
+    string id = 1;
+}
+
+message ReadCategoryRes {
+    Category category = 1;
+}
+
+message UpdateCategoryReq {
+    Category category = 1;
+}
+
+message UpdateCategoryRes {
+    Category category = 1;
+}
+
+message DeleteCategoryReq {
+    string id = 1;
+}
+
+message DeleteCategoryRes {
+    bool success = 1;
+}
+
+message ListCategoriesReq {}
+
+message ListCategoriesRes {
+    Category category = 1;
+}
+
+service CategoryService {
+    rpc CreateCategory(CreateCategoryReq) returns (CreateCategoryRes);
+    rpc ReadCategory(ReadCategoryReq) returns (ReadCategoryRes);
+    rpc UpdateCategory(UpdateCategoryReq) returns (UpdateCategoryRes);
+    rpc DeleteCategory(DeleteCategoryReq) returns (DeleteCategoryRes);
+    rpc ListCategories(ListCategoriesReq) returns (stream ListCategoriesRes);
+}

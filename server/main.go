@@ -7,8 +7,10 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"reflect"
 
-	plantpb "github.com/visay/go-grpc-mongodb/proto"
+	categorypb "github.com/visay/go-grpc-mongodb/proto/category"
+	plantpb "github.com/visay/go-grpc-mongodb/proto/plant"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -17,6 +19,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+// -----------------------------------------------------------------------------
 
 type PlantServiceServer struct {
 }
@@ -28,6 +32,7 @@ func (s *PlantServiceServer) ReadPlant(ctx context.Context, req *plantpb.ReadPla
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Could not convert to ObjectId: %v", err))
 	}
 	result := plantdb.FindOne(ctx, bson.M{"_id": oid})
+
 	// Create an empty PlantItem to write our decode result to
 	data := PlantItem{}
 	// decode and write to data
@@ -180,8 +185,163 @@ type PlantItem struct {
 	Desc       string             `bson:"desc"`
 }
 
+// -----------------------------------------------------------------------------
+
+type CategoryServiceServer struct {
+}
+
+func (s *CategoryServiceServer) ReadCategory(ctx context.Context, req *categorypb.ReadCategoryReq) (*categorypb.ReadCategoryRes, error) {
+	// convert string id (from proto) to mongoDB ObjectId
+	oid, err := primitive.ObjectIDFromHex(req.GetId())
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Could not convert to ObjectId: %v", err))
+	}
+	result := categorydb.FindOne(ctx, bson.M{"_id": oid})
+	// Create an empty CategoryItem to write our decode result to
+	data := CategoryItem{}
+	// decode and write to data
+	if err := result.Decode(&data); err != nil {
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("Could not find category with Object Id %s: %v", req.GetId(), err))
+	}
+	// Cast to ReadCategoryRes type
+	response := &categorypb.ReadCategoryRes{
+		Category: &categorypb.Category{
+			Id:   oid.Hex(),
+			Name: data.Name,
+		},
+	}
+	return response, nil
+}
+
+func (s *CategoryServiceServer) CreateCategory(ctx context.Context, req *categorypb.CreateCategoryReq) (*categorypb.CreateCategoryRes, error) {
+	// Get the protobuf category type from the protobuf request type
+	// Essentially doing req.Category to access the struct with a nil check
+	category := req.GetCategory()
+	// Now we have to convert this into a CategoryItem type to convert into BSON
+	data := CategoryItem{
+		// ID:       primitive.NilObjectID,
+		Name: category.GetName(),
+	}
+
+	// Insert the data into the database
+	// *InsertOneResult contains the oid
+	result, err := categorydb.InsertOne(mongoCtx, data)
+	// check error
+	if err != nil {
+		// return internal gRPC error to be handled later
+		return nil, status.Errorf(
+			codes.Internal,
+			fmt.Sprintf("Internal error: %v", err),
+		)
+	}
+	// add the id to category
+	oid := result.InsertedID.(primitive.ObjectID)
+	category.Id = oid.Hex()
+	// return the category in a CreateCategoryRes type
+	return &categorypb.CreateCategoryRes{Category: category}, nil
+}
+
+func (s *CategoryServiceServer) UpdateCategory(ctx context.Context, req *categorypb.UpdateCategoryReq) (*categorypb.UpdateCategoryRes, error) {
+	// Get the category data from the request
+	category := req.GetCategory()
+
+	// Convert the Id string to a MongoDB ObjectId
+	oid, err := primitive.ObjectIDFromHex(category.GetId())
+	if err != nil {
+		return nil, status.Errorf(
+			codes.InvalidArgument,
+			fmt.Sprintf("Could not convert the supplied category id to a MongoDB ObjectId: %v", err),
+		)
+	}
+
+	// Convert the data to be updated into an unordered Bson document
+	update := bson.M{
+		"name": category.GetName(),
+	}
+
+	// Convert the oid into an unordered bson document to search by id
+	filter := bson.M{"_id": oid}
+
+	// Result is the BSON encoded result
+	// To return the updated document instead of original we have to add options.
+	result := categorydb.FindOneAndUpdate(ctx, filter, bson.M{"$set": update}, options.FindOneAndUpdate().SetReturnDocument(1))
+
+	// Decode result and write it to 'decoded'
+	decoded := CategoryItem{}
+	err = result.Decode(&decoded)
+	if err != nil {
+		return nil, status.Errorf(
+			codes.NotFound,
+			fmt.Sprintf("Could not find category with supplied ID: %v", err),
+		)
+	}
+	return &categorypb.UpdateCategoryRes{
+		Category: &categorypb.Category{
+			Id:   decoded.ID.Hex(),
+			Name: decoded.Name,
+		},
+	}, nil
+}
+
+func (s *CategoryServiceServer) DeleteCategory(ctx context.Context, req *categorypb.DeleteCategoryReq) (*categorypb.DeleteCategoryRes, error) {
+	oid, err := primitive.ObjectIDFromHex(req.GetId())
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Could not convert to ObjectId: %v", err))
+	}
+	// DeleteOne returns DeleteResult which is a struct containing the amount of deleted docs (in this case only 1 always)
+	// So we return a boolean instead
+	_, err = categorydb.DeleteOne(ctx, bson.M{"_id": oid})
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("Could not find/delete category with id %s: %v", req.GetId(), err))
+	}
+	return &categorypb.DeleteCategoryRes{
+		Success: true,
+	}, nil
+}
+
+func (s *CategoryServiceServer) ListCategories(req *categorypb.ListCategoriesReq, stream categorypb.CategoryService_ListCategoriesServer) error {
+	// Initiate a CategoryItem type to write decoded data to
+	data := &CategoryItem{}
+	// collection.Find returns a cursor for our (empty) query
+	cursor, err := categorydb.Find(context.Background(), bson.M{})
+	if err != nil {
+		return status.Errorf(codes.Internal, fmt.Sprintf("Unknown internal error: %v", err))
+	}
+	// An expression with defer will be called at the end of the function
+	defer cursor.Close(context.Background())
+	// cursor.Next() returns a boolean, if false there are no more items and loop will break
+	for cursor.Next(context.Background()) {
+		// Decode the data at the current pointer and write it to data
+		err := cursor.Decode(data)
+		// check error
+		if err != nil {
+			return status.Errorf(codes.Unavailable, fmt.Sprintf("Could not decode data: %v", err))
+		}
+		// If no error is found send category over stream
+		stream.Send(&categorypb.ListCategoriesRes{
+			Category: &categorypb.Category{
+				Id:   data.ID.Hex(),
+				Name: data.Name,
+			},
+		})
+	}
+	// Check if the cursor has any errors
+	if err := cursor.Err(); err != nil {
+		return status.Errorf(codes.Internal, fmt.Sprintf("Unkown cursor error: %v", err))
+	}
+	return nil
+}
+
+type CategoryItem struct {
+	ID   primitive.ObjectID `bson:"_id,omitempty"`
+	Name string             `bson:"name"`
+}
+
+// -----------------------------------------------------------------------------
+
 var db *mongo.Client
 var plantdb *mongo.Collection
+var categorydb *mongo.Collection
 var mongoCtx context.Context
 
 func main() {
@@ -207,10 +367,13 @@ func main() {
 	opts := []grpc.ServerOption{}
 	// var s *grpc.Server
 	s := grpc.NewServer(opts...)
-	// var srv *PlantServiceServer
-	srv := &PlantServiceServer{}
+	// var plantsrv *PlantServiceServer
+	plantsrv := &PlantServiceServer{}
+	// var categorysrv *CategoryServiceServer
+	categorysrv := &CategoryServiceServer{}
 
-	plantpb.RegisterPlantServiceServer(s, srv)
+	plantpb.RegisterPlantServiceServer(s, plantsrv)
+	categorypb.RegisterCategoryServiceServer(s, categorysrv)
 
 	// Initialize MongoDb client
 	fmt.Println("Connecting to MongoDB...")
@@ -227,6 +390,41 @@ func main() {
 	}
 
 	plantdb = db.Database("plant_db").Collection("plant_collection")
+	categorydb = db.Database("plant_db").Collection("category_collection")
+
+	// Declare an index model object to pass to CreateOne()
+	// db.members.createIndex( { "SOME_FIELD": 1 }, { unique: true } )
+	indexModel := mongo.IndexModel{
+		Keys: bson.M{
+			"name": 1, // index in ascending order
+		}, Options: options.Index().SetUnique(true),
+	}
+
+	// Create an Index using the CreateOne() method
+	plantIndex, err := plantdb.Indexes().CreateOne(mongoCtx, indexModel)
+
+	// Check if the CreateOne() method returned any errors
+	if err != nil {
+		fmt.Println("Indexes().CreateOne() ERROR:", err)
+		os.Exit(1) // exit in case of error
+	} else {
+		// API call returns string of the index name
+		fmt.Println("Created category index:", plantIndex)
+		fmt.Println("Field type:", reflect.TypeOf(plantIndex), "\n")
+	}
+
+	// Create an Index using the CreateOne() method
+	categoryIndex, err := categorydb.Indexes().CreateOne(mongoCtx, indexModel)
+
+	// Check if the CreateOne() method returned any errors
+	if err != nil {
+		fmt.Println("Indexes().CreateOne() ERROR:", err)
+		os.Exit(1) // exit in case of error
+	} else {
+		// API call returns string of the index name
+		fmt.Println("Created category index:", categoryIndex)
+		fmt.Println("Field type:", reflect.TypeOf(categoryIndex), "\n")
+	}
 
 	// Start the server in a child routine
 	go func() {

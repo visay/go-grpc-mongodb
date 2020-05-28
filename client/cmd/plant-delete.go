@@ -19,58 +19,47 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	plantpb "github.com/visay/go-grpc-mongodb/proto"
+	plantpb "github.com/visay/go-grpc-mongodb/proto/plant"
 )
 
-// updateCmd represents the update command
-var updateCmd = &cobra.Command{
-	Use:   "update",
-	Short: "Update a Plant by its ID",
-	Long: `Update a plant by its mongoDB Unique identifier.
+// deleteCmd represents the read command
+var deleteCmd = &cobra.Command{
+	Use:   "delete",
+	Short: "Delete a Plant by its ID",
+	Long: `Delete a plant by its mongoDB Unique identifier.
 
 	If no plant is found for the ID, it will return a 'Not Found' error`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// Get the flags from CLI
 		id, err := cmd.Flags().GetString("id")
-		name, err := cmd.Flags().GetString("name")
-		category_id, err := cmd.Flags().GetString("category_id")
-		desc, err := cmd.Flags().GetString("desc")
-
-		// Create an UpdatePlantRequest
-		req := &plantpb.UpdatePlantReq{
-			Plant: &plantpb.Plant{
-				Id:         id,
-				Name:       name,
-				CategoryId: category_id,
-				Desc:       desc,
-			},
-		}
-
-		res, err := client.UpdatePlant(context.Background(), req)
 		if err != nil {
 			return err
 		}
-
-		fmt.Println(res)
+		req := &plantpb.DeletePlantReq{
+			Id: id,
+		}
+		// We only return true upon success for other cases an error is thrown
+		// We can thus omit the response variable for now and just print something to console
+		_, err = plantClient.DeletePlant(context.Background(), req)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("Succesfully deleted the plant with id %s\n", id)
 		return nil
 	},
 }
 
 func init() {
-	updateCmd.Flags().StringP("id", "i", "", "The id of the plant")
-	updateCmd.Flags().StringP("name", "n", "", "Name of the plant")
-	updateCmd.Flags().StringP("category_id", "c", "", "The category for the plant")
-	updateCmd.Flags().StringP("desc", "d", "", "The description for the plant")
-	updateCmd.MarkFlagRequired("id")
-	rootCmd.AddCommand(updateCmd)
+	deleteCmd.Flags().StringP("id", "i", "", "The id of the plant")
+	deleteCmd.MarkFlagRequired("id")
+	rootCmd.AddCommand(deleteCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// updateCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// deleteCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// updateCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// deleteCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

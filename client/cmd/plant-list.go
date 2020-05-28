@@ -20,10 +20,10 @@ import (
 	"io"
 
 	"github.com/spf13/cobra"
-	plantpb "github.com/visay/go-grpc-mongodb/proto"
+	plantpb "github.com/visay/go-grpc-mongodb/proto/plant"
 )
 
-// listCmd represents the read command
+// listCmd represents the list command
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all plants",
@@ -31,7 +31,7 @@ var listCmd = &cobra.Command{
 		// Create the request (this can be inline below too)
 		req := &plantpb.ListPlantsReq{}
 		// Call ListPlants that returns a stream
-		stream, err := client.ListPlants(context.Background(), req)
+		stream, err := plantClient.ListPlants(context.Background(), req)
 		// Check for errors
 		if err != nil {
 			return err
