@@ -1,3 +1,5 @@
+// Copyright © 2020 Visay Keo <keo@visay.info>
+
 package main
 
 import (
@@ -409,7 +411,7 @@ func main() {
 		os.Exit(1) // exit in case of error
 	} else {
 		// API call returns string of the index name
-		fmt.Println("Created category index:", plantIndex)
+		fmt.Println("Created plant index:", plantIndex)
 		fmt.Println("Field type:", reflect.TypeOf(plantIndex), "\n")
 	}
 
