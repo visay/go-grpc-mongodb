@@ -57,6 +57,20 @@ func (s *PlantServiceServer) CreatePlant(ctx context.Context, req *plantpb.Creat
 	// Get the protobuf plant type from the protobuf request type
 	// Essentially doing req.Plant to access the struct with a nil check
 	plant := req.GetPlant()
+
+	// convert string id (from proto) to mongoDB ObjectId
+	oidCat, err := primitive.ObjectIDFromHex(plant.GetCategoryId())
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Could not convert to ObjectId: %v", err))
+	}
+	resultCat := categorydb.FindOne(ctx, bson.M{"_id": oidCat})
+	// Create an empty CategoryItem to write our decode result to
+	dataCat := CategoryItem{}
+	// decode and write to data
+	if err := resultCat.Decode(&dataCat); err != nil {
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("Could not find category with Object Id %s: %v", plant.GetCategoryId(), err))
+	}
+
 	// Now we have to convert this into a PlantItem type to convert into BSON
 	data := PlantItem{
 		// ID:       primitive.NilObjectID,
@@ -94,6 +108,19 @@ func (s *PlantServiceServer) UpdatePlant(ctx context.Context, req *plantpb.Updat
 			codes.InvalidArgument,
 			fmt.Sprintf("Could not convert the supplied plant id to a MongoDB ObjectId: %v", err),
 		)
+	}
+
+	// convert string id (from proto) to mongoDB ObjectId
+	oidCat, err := primitive.ObjectIDFromHex(plant.GetCategoryId())
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Could not convert to ObjectId: %v", err))
+	}
+	resultCat := categorydb.FindOne(ctx, bson.M{"_id": oidCat})
+	// Create an empty CategoryItem to write our decode result to
+	dataCat := CategoryItem{}
+	// decode and write to data
+	if err := resultCat.Decode(&dataCat); err != nil {
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("Could not find category with Object Id %s: %v", plant.GetCategoryId(), err))
 	}
 
 	// Convert the data to be updated into an unordered Bson document
@@ -290,6 +317,9 @@ func (s *CategoryServiceServer) DeleteCategory(ctx context.Context, req *categor
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Could not convert to ObjectId: %v", err))
 	}
+
+	// TODO: check if category is being used
+
 	// DeleteOne returns DeleteResult which is a struct containing the amount of deleted docs (in this case only 1 always)
 	// So we return a boolean instead
 	_, err = categorydb.DeleteOne(ctx, bson.M{"_id": oid})
